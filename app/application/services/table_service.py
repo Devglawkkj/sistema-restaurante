@@ -1,0 +1,81 @@
+import uuid
+from fastapi import HTTPException, status
+from sqlalchemy.orm import Session
+
+from app.infrastructure.database.models.table_model import TableModel
+from app.domain.entities.table import TableStatus
+from app.presentation.schemas.table_schema import TableCreate, TableUpdate
+
+
+def get_all_tables(db: Session):
+    return db.query(TableModel).order_by(TableModel.numero).all()
+
+
+def get_table_by_id(db: Session, table_id: str) -> TableModel:
+    table = db.query(TableModel).filter(TableModel.id == table_id).first()
+    if not table:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Mesa nao encontrada")
+    return table
+
+
+def create_table(db: Session, data: TableCreate) -> TableModel:
+    existing = db.query(TableModel).filter(TableModel.numero == data.numero).first()
+    if existing:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Numero de mesa ja existe")
+    table = TableModel(
+        id=str(uuid.uuid4()),
+        numero=data.numero,
+        status=TableStatus.livre,
+    )
+    db.add(table)
+    db.commit()
+    db.refresh(table)
+    return table
+
+
+def update_table(db: Session, table_id: str, data: TableUpdate) -> TableModel:
+    table = get_table_by_id(db, table_id)
+    if data.numero is not None:
+        table.numero = data.numero
+    db.commit()
+    db.refresh(table)
+    return table
+
+
+def open_table(db: Session, table_id: str) -> TableModel:
+    table = get_table_by_id(db, table_id)
+    if table.status == TableStatus.ocupada:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Mesa ja esta ocupada")
+    table.status = TableStatus.ocupada
+    db.commit()
+    db.refresh(table)
+    return table
+
+
+def close_table(db: Session, table_id: str) -> TableModel:
+    from app.infrastructure.database.models.order_model import OrderModel
+    from app.domain.entities.order import OrderStatus
+
+    table = get_table_by_id(db, table_id)
+
+    comanda_aberta = db.query(OrderModel).filter(
+        OrderModel.mesa_id == table_id,
+        OrderModel.status == OrderStatus.aberta,
+    ).first()
+
+    if comanda_aberta:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Mesa possui comanda aberta. Realize o pagamento antes de fechar.",
+        )
+
+    table.status = TableStatus.livre
+    db.commit()
+    db.refresh(table)
+    return table
+
+
+def delete_table(db: Session, table_id: str) -> None:
+    table = get_table_by_id(db, table_id)
+    db.delete(table)
+    db.commit()
