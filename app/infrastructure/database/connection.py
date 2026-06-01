@@ -1,3 +1,5 @@
+# Configuracao de conexao com o banco de dados usando SQLAlchemy.
+# A sessao e criada para cada requisicao e fechada automaticamente apos o uso.
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 

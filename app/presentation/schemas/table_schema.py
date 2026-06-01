@@ -1,3 +1,5 @@
+# Schemas Pydantic para validacao e serializacao de dados de mesa.
+# Esses modelos definem como as entradas sao recebidas e como as respostas sao retornadas ao cliente.
 from pydantic import BaseModel
 from app.domain.entities.table import TableStatus
 

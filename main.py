@@ -1,3 +1,5 @@
+# Aplicacao principal do backend. Define a instancia FastAPI, habilita CORS e registra os roteadores.
+# Cada router e responsavel por expor os endpoints de um modulo do restaurante.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 

@@ -1,3 +1,5 @@
+# Servico de dominio para operacoes de mesa. Este modulo orquestra validacoes e
+# persistencia via SQLAlchemy, mantendo as regras de negocio separadas dos endpoints.
 import uuid
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -19,6 +21,7 @@ def get_table_by_id(db: Session, table_id: str) -> TableModel:
 
 
 def create_table(db: Session, data: TableCreate) -> TableModel:
+    # Verifica se o numero de mesa ja esta cadastrado antes de inserir.
     existing = db.query(TableModel).filter(TableModel.numero == data.numero).first()
     if existing:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Numero de mesa ja existe")

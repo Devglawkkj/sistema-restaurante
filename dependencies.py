@@ -1,3 +1,5 @@
+# Dependencias de seguranca utilizadas nos endpoints. Essas funcoes cuidam da verificacao de tokens JWT
+# e da autorizacao de acesso baseado no perfil do usuario.
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt

@@ -1,3 +1,5 @@
+# Roteador de mesas. Define os endpoints HTTP para listar, criar, atualizar,
+# abrir, fechar e excluir mesas. As autorizacoes sao aplicadas via dependencias.
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -23,6 +25,7 @@ def create_table(
     db: Session = Depends(get_db),
     _=Depends(require_admin),
 ):
+    # Cria uma nova mesa apenas se o usuario for administrador.
     return table_service.create_table(db, data)
 
 

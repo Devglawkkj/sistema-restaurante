@@ -1,3 +1,5 @@
+# Configuracao de aplicacao baseada em variaveis de ambiente.
+# Essa configuracao inclui URL do banco, chave secreta e parametros de expiracao de token.
 from pydantic_settings import BaseSettings
 
 
