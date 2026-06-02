@@ -69,7 +69,7 @@ def close_table(db: Session, table_id: str) -> TableModel:
     if comanda_aberta:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Mesa possui comanda aberta. Realize o pagamento antes de fechar.",
+            detail="Mesa possui comanda aberta. Realize o pagamento ou libere a mesa.",
         )
 
     table.status = TableStatus.livre
@@ -78,7 +78,45 @@ def close_table(db: Session, table_id: str) -> TableModel:
     return table
 
 
-def delete_table(db: Session, table_id: str) -> None:
+def release_table(db: Session, table_id: str) -> TableModel:
+    """
+    Libera a mesa para novo atendimento.
+    Fecha todas as comandas abertas sem registrar pagamento (cancelamento/desistencia).
+    Diferente de close_table, que exige que nao haja comanda aberta.
+    """
+    from datetime import datetime, timezone
+
+    from app.infrastructure.database.models.order_model import OrderModel
+    from app.domain.entities.order import OrderStatus
+
     table = get_table_by_id(db, table_id)
+
+    open_orders = (
+        db.query(OrderModel)
+        .filter(OrderModel.mesa_id == table_id, OrderModel.status == OrderStatus.aberta)
+        .all()
+    )
+
+    now = datetime.now(timezone.utc)
+    for order in open_orders:
+        order.status = OrderStatus.fechada
+        order.data_fechamento = now
+
+    table.status = TableStatus.livre
+    db.commit()
+    db.refresh(table)
+    return table
+
+
+def delete_table(db: Session, table_id: str) -> None:
+    from app.infrastructure.database.models.order_model import OrderModel
+
+    table = get_table_by_id(db, table_id)
+    has_orders = db.query(OrderModel).filter(OrderModel.mesa_id == table_id).first()
+    if has_orders:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Mesa possui comandas vinculadas e nao pode ser excluida",
+        )
     db.delete(table)
     db.commit()

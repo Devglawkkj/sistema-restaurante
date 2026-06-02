@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.infrastructure.database.connection import get_db
@@ -30,8 +30,13 @@ def create_user(
 def get_user(
     user_id: str,
     db: Session = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
 ):
+    if current_user["perfil"] != "admin" and current_user["user_id"] != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso negado",
+        )
     return user_service.get_user_by_id(db, user_id)
 
 

@@ -11,10 +11,14 @@ from config import settings
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
-def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    db: Session = Depends(get_db),
-):
+def verify_token_optional(token: str) -> dict | None:
+    try:
+        return decode_access_token(token)
+    except HTTPException:
+        return None
+
+
+def decode_access_token(token: str) -> dict:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Token invalido ou expirado",
@@ -26,13 +30,19 @@ def get_current_user(
             settings.SECRET_KEY,
             algorithms=[settings.ALGORITHM],
         )
-        user_id: str = payload.get("sub")
+        user_id = payload.get("sub")
         if user_id is None:
             raise credentials_exception
+        return {"user_id": str(user_id), "perfil": payload.get("perfil")}
     except JWTError:
         raise credentials_exception
 
-    return {"user_id": user_id, "perfil": payload.get("perfil")}
+
+def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+):
+    return decode_access_token(token)
 
 
 def require_admin(current_user: dict = Depends(get_current_user)):

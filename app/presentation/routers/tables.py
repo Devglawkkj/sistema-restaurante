@@ -66,6 +66,15 @@ def close_table(
     return table_service.close_table(db, table_id)
 
 
+@router.post("/{table_id}/release", response_model=TableResponse)
+def release_table(
+    table_id: str,
+    db: Session = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    return table_service.release_table(db, table_id)
+
+
 @router.delete("/{table_id}", status_code=204)
 def delete_table(
     table_id: str,
